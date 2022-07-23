@@ -12,7 +12,7 @@
 
  Author: Chris Marrison
 
- Date Last Updated: 20220722
+ Date Last Updated: 20220723
 
  Todo:
 
@@ -51,7 +51,7 @@ import dns.resolver
 import random
 import time
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __copyright__ = "Chris Marrison"
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
@@ -93,9 +93,9 @@ def parse_args(args):
         const=logging.DEBUG,
     )
 
-    # parser.add_argument('-c', '--config', type=str, default='demo.ini',
-    #                    help="Overide Config file")
-    parser.add_argument('-q', '--queryfile', type=str, default='queries.csv',
+    parser.add_argument('-c', '--config', type=str, default='config.yml',
+                        help="Overide Config file")
+    parser.add_argument('-q', '--queryfile', type=str, default='sample_queries',
                         help="Query input file")
 
     return parser.parse_args(args)
@@ -111,6 +111,27 @@ def setup_logging(loglevel):
     logging.basicConfig(
         level=loglevel, stream=sys.stdout, format=logformat, datefmt="%Y-%m-%d %H:%M:%S"
     )
+    return
+
+
+def get_config(cfg):
+    '''
+    '''
+    config = {}
+
+    if os.path.isfile(cfg):
+        # Attempt to open yaml config file 
+        try:
+            config = yaml.safe_load(open(cfg, 'r'))
+        except yaml.YAMLError as err:
+            _logger.error(err)
+            raise
+    else:
+        _logger.error('No such file {}'.format(cfg))
+        raise FileNotFoundError(f'Config file "{cfg}" not found.')
+
+    return config
+
 
 def open_file(filename):
     '''
@@ -152,7 +173,7 @@ def build_queries(filename=''):
         qfile = open_file(filename)
         for line in qfile:
             line = line.rstrip()
-            q = line.split(',')
+            q = line.split()
             query = { "query": q[0], "qtype": q[1]}
             _logger.debug(f'{query}')
             queries.append(query)
@@ -210,9 +231,12 @@ def main(args):
     '''
     sucess = 0
     failed = 0
+    config = {}
 
     args = parse_args(args)
     setup_logging(args.loglevel)
+    config = get_config(args.config)
+
     _logger.info("Reading query file")
     qlist = build_queries(args.queryfile)
     sucess, failed = generate_queries(qlist)
