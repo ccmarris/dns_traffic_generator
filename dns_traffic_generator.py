@@ -50,6 +50,7 @@ import os
 import dns.resolver
 import random
 import time
+import yaml
 
 __version__ = '0.0.2'
 __copyright__ = "Chris Marrison"
