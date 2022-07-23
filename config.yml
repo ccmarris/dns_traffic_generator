@@ -3,7 +3,8 @@
 rtime: 11
 # Running schedule
 schedule:
-  daysi_of_week:
+  continuous: false
+  days_of_week:
     - Mon
     - Tue
     - Wed

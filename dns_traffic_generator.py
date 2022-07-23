@@ -52,7 +52,7 @@ import random
 import time
 import yaml
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 __copyright__ = "Chris Marrison"
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
@@ -230,18 +230,27 @@ def main(args):
       args (List[str]): command line parameters as list of strings
           (for example  ``["--verbose", "42"]``).
     '''
+    run = True
     sucess = 0
     failed = 0
     config = {}
 
     args = parse_args(args)
     setup_logging(args.loglevel)
+    _logger.info("Reading configuration")
     config = get_config(args.config)
 
     _logger.info("Reading query file")
     qlist = build_queries(args.queryfile)
-    sucess, failed = generate_queries(qlist)
-    _logger.info(f'Successful queries: {sucess}, Failed queries: {failed}')
+
+    while run:
+        if scheduled(config):
+            _logger.info("Executing queries")
+            sucess, failed = generate_queries(qlist, rtime=)
+            _logger.info(f'Successful queries: {sucess}, Failed queries: {failed}')
+            time.sleep(random.randint(1,123))
+        else:
+            run = wait_for_schedule(config)
 
     return
 
