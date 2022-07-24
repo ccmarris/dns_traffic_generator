@@ -53,7 +53,7 @@ import time
 import yaml
 import datetime
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 __copyright__ = "Chris Marrison"
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
@@ -287,26 +287,31 @@ def wait_for_schedule(config):
         now_time = now.time()   
         # Check weekday
         week_day = days_of_week[now.weekday()]
+        # Get start and end times
+        if config['schedule'].get('start_time'):
+            start_delta = convert_to_delta(config['schedule'].get('start_time'))
+        else:
+            # Set to midnight
+            start_delta = convert_to_delta('0000')
+        if config['schedule'].get('end_time'):
+            end_delta = convert_to_delta(config['schedule'].get('end_time'))
+        else:
+            end_delta = convert_to_delta('2359')
+        
+        now_delta = datetime.timedelta(hours=now_time.hour,
+                                        minutes=now_time.minute,
+                                        seconds=now_time.second )
+        wait = calc_wait(now_delta, start_delta, end_delta)
+
         if week_day in config['schedule'].get('days_of_week'):
             _logger.debug(f'{week_day} in schedule')
-            # Get start and end times
-            if config['schedule'].get('start_time'):
-                start_delta = convert_to_delta(config['schedule'].get('start_time'))
-            else:
-                # Set to midnight
-                start_delta = convert_to_delta('0000')
-            if config['schedule'].get('end_time'):
-                end_delta = convert_to_delta(config['schedule'].get('end_time'))
-            else:
-                end_delta = convert_to_delta('2359')
-            
-            now_delta = datetime.timedelta(hours=now_time.hour,
-                                           minutes=now_time.minute,
-                                           seconds=now_time.second )
-            wait = calc_wait(now_delta, start_delta, end_delta)
-            _logger.info(f'Waiting for schedule: {wait} until next attemp.')
-            time.sleep(wait)
-            status = True
+        else:
+            _logger.debug(f'{week_day} not in schedule - try tomorrow')
+
+        # Sleep time
+        _logger.info(f'Waiting for next schedule: {wait} until next attemp.')
+        time.sleep(wait)
+        status = True
 
     else:
         _logger.warning("No schedule defined - exiting")
