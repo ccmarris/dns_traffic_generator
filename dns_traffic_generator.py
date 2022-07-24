@@ -169,16 +169,22 @@ def build_queries(filename=''):
     Returns:
       list: list of dict [{"query": "fqdn", "qtype": "query type"}]
     '''
+    count = 0
     queries = []
     query = {}
     if filename:
         qfile = open_file(filename)
         for line in qfile:
+            count += 1
             line = line.rstrip()
             q = line.split()
-            query = { "query": q[0], "qtype": q[1]}
-            _logger.debug(f'{query}')
-            queries.append(query)
+            if len(q) == 2:
+                query = { "query": q[0], "qtype": q[1]}
+                _logger.debug(f'{query}')
+                queries.append(query)
+            else:
+                _logger.debug(f'Error line {count}: {line}')
+                
     else:
         # Gen Test query
         queries = [ { "query": "www.google.com", "qtype": "a" },
