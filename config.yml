@@ -10,8 +10,9 @@ schedule:
     - Wed
     - Thu
     - Fri
-  start_time: 0800
-  end_time: 1800
+    - Sun
+  start_time: '0800'
+  end_time: '1800'
 # User authentication - experimental
 ad_auth:
   use_auth: false

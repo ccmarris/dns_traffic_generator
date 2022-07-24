@@ -51,8 +51,9 @@ import dns.resolver
 import random
 import time
 import yaml
+import datetime
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 __copyright__ = "Chris Marrison"
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
@@ -202,7 +203,7 @@ def generate_queries(qlist, rtime=11):
             _logger.debug(f'query: {query["query"]}, successful')
             successful += 1
         else:
-            _logger.debug(f'query: query["query"], failed')
+            _logger.debug(f'query: {query["query"]}, failed')
             failed += 1
 
     return successful, failed
@@ -224,6 +225,125 @@ def dns_query(query, qtype='A'):
     return status
 
 
+def scheduled(config):
+    '''
+    '''
+    scheduled = False
+    days_of_week = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
+
+    if 'schedule' in config.keys():
+        if config['schedule'].get('continuous'):
+            _logger.debug('Continuous schedule')
+            scheduled = True
+        else:
+            now = datetime.datetime.now()
+            # Check weekday
+            week_day = days_of_week[now.weekday()]
+            if week_day in config['schedule'].get('days_of_week'):
+                _logger.debug(f'{week_day} in schedule')
+                # Get start and end times
+                if config['schedule'].get('start_time'):
+                    start_time = convert_to_delta(config['schedule'].get('start_time'))
+                else:
+                    # Set to midnight
+                    start_time = convert_to_delta('0000')
+                if config['schedule'].get('end_time'):
+                    end_time = convert_to_delta(config['schedule'].get('end_time'))
+                else:
+                    end_time = convert_to_delta('2359')
+
+                # Check time schedule
+                current_time = convert_to_delta(now.strftime('%H%M'))
+                if start_time < current_time < end_time:
+                    _logger.debug(f'{now.strftime("%H:%M")} within time window')
+                    scheduled = True
+                else:
+                    _logger.debug(f'{now.strftime("%H:%M")} outside time window')
+                    scheduled = False
+            else:
+                _logger.debug(f'Not scheduled for today in schedule')
+                scheduled = False
+    else:
+        _logger.warning("No schedule defined")
+        
+    return scheduled
+
+
+def wait_for_schedule(config):
+    '''
+    '''
+    status = False 
+    wait = 0
+    days_of_week = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ]
+
+    if 'schedule' in config.keys():
+        now = datetime.datetime.now()
+        now_time = now.time()   
+        # Check weekday
+        week_day = days_of_week[now.weekday()]
+        if week_day in config['schedule'].get('days_of_week'):
+            _logger.debug(f'{week_day} in schedule')
+            # Get start and end times
+            if config['schedule'].get('start_time'):
+                start_delta = convert_to_delta(config['schedule'].get('start_time'))
+            else:
+                # Set to midnight
+                start_delta = convert_to_delta('0000')
+            if config['schedule'].get('end_time'):
+                end_delta = convert_to_delta(config['schedule'].get('end_time'))
+            else:
+                end_delta = convert_to_delta('2359')
+            
+            now_delta = datetime.timedelta(hours=now_time.hour,
+                                           minutes=now_time.minute,
+                                           seconds=now_time.second )
+            wait = calc_wait(now_delta, start_delta, end_delta)
+            _logger.info(f'Waiting for schedule: {wait} until next attemp.')
+            time.sleep(wait)
+            status = True
+
+    else:
+        _logger.warning("No schedule defined - exiting")
+
+    return status
+
+
+def convert_to_delta(stime):
+    '''
+    Convert basic string time 'HHMM' to datetime.deltatime()
+
+    Parameters:
+        st (str): Simple time in 24h 'HHMM' format
+    
+    Returns:
+        datetime.time() object
+    '''
+    stime = str(stime)
+    hours = int(stime[:-2])
+    minutes = int(stime[2:])
+    t = datetime.time(hours, minutes)
+    return datetime.timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+
+
+def calc_wait(ntime, stime, etime):
+    '''
+    '''
+    wait = 0
+
+    day = datetime.timedelta(days=1)
+    if ntime < stime:
+        wait = stime - ntime
+    elif ntime > etime:
+        # Wait until st tomorrow
+        wait = day - ntime + stime
+    else:
+        wait = 0
+    
+    _logger.debug(f'Wait time: {wait}')
+    
+    return wait
+
+
 def main(args):
     '''
     Args:
@@ -239,6 +359,8 @@ def main(args):
     setup_logging(args.loglevel)
     _logger.info("Reading configuration")
     config = get_config(args.config)
+    rtime = config.get('rtime') if config.get('rtime') else 11
+    _logger.debug(f'Random time interval set to {rtime} seconds')
 
     _logger.info("Reading query file")
     qlist = build_queries(args.queryfile)
@@ -246,11 +368,17 @@ def main(args):
     while run:
         if scheduled(config):
             _logger.info("Executing queries")
-            sucess, failed = generate_queries(qlist, rtime=)
+            sucess, failed = generate_queries(qlist, rtime=rtime)
             _logger.info(f'Successful queries: {sucess}, Failed queries: {failed}')
-            time.sleep(random.randint(1,123))
         else:
+            _logger.info("Not currently scheduled")
             run = wait_for_schedule(config)
+        
+        if run:
+            # Wait for random period before continuing
+            wait = random.randint(1,21)
+            _logger.debug(f'Waiting {wait} seconds...')
+            time.sleep(wait))
 
     return
 
