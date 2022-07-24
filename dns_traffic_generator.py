@@ -310,7 +310,7 @@ def wait_for_schedule(config):
 
         # Sleep time
         _logger.info(f'Waiting for next schedule: {wait} until next attemp.')
-        time.sleep(wait)
+        time.sleep(wait.total_seconds())
         status = True
 
     else:
@@ -348,7 +348,7 @@ def calc_wait(ntime, stime, etime):
         # Wait until st tomorrow
         wait = day - ntime + stime
     else:
-        wait = 0
+        wait = datetime.deltatime(seconds=0)
     
     _logger.debug(f'Wait time: {wait}')
     
