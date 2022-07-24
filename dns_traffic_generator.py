@@ -378,7 +378,7 @@ def main(args):
             # Wait for random period before continuing
             wait = random.randint(1,21)
             _logger.debug(f'Waiting {wait} seconds...')
-            time.sleep(wait))
+            time.sleep(wait)
 
     return
 
