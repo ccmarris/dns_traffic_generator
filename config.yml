@@ -10,7 +10,6 @@ schedule:
     - Wed
     - Thu
     - Fri
-    - Sun
   start_time: '0800'
   end_time: '1800'
 # User authentication - experimental
