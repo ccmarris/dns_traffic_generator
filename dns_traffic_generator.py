@@ -321,7 +321,7 @@ def wait_for_schedule(config):
 
 def convert_to_delta(stime):
     '''
-    Convert basic string time 'HHMM' to datetime.deltatime()
+    Convert basic string time 'HHMM' to datetime.timedelta()
 
     Parameters:
         st (str): Simple time in 24h 'HHMM' format
@@ -348,7 +348,7 @@ def calc_wait(ntime, stime, etime):
         # Wait until st tomorrow
         wait = day - ntime + stime
     else:
-        wait = datetime.deltatime(seconds=0)
+        wait = datetime.timedelta(seconds=0)
     
     _logger.debug(f'Wait time: {wait}')
     
