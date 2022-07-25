@@ -52,8 +52,9 @@ import random
 import time
 import yaml
 import datetime
+import tqdm
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 __copyright__ = "Chris Marrison"
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
@@ -203,14 +204,19 @@ def generate_queries(qlist, rtime=11):
 
     random.shuffle(qlist)
     _logger.info(f'Generating {len(qlist)} queries')
-    for query in qlist:
-        time.sleep(random.uniform(0,rtime))
-        if dns_query(query['query'], query['qtype']):
-            _logger.debug(f'query: {query["query"]}, successful')
-            successful += 1
-        else:
-            _logger.debug(f'query: {query["query"]}, failed')
-            failed += 1
+
+    with tqdm.tqdm(total=len(qlist)) as pbar:
+        for query in qlist:
+            # Update progress bar
+            pbar.update(1)
+            # Wait random time and generate query
+            time.sleep(random.uniform(0,rtime))
+            if dns_query(query['query'], query['qtype']):
+                _logger.debug(f'query: {query["query"]}, successful')
+                successful += 1
+            else:
+                _logger.debug(f'query: {query["query"]}, failed')
+                failed += 1
 
     return successful, failed
 
