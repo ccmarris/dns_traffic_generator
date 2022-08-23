@@ -54,7 +54,7 @@ import yaml
 import datetime
 import tqdm
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __copyright__ = "Chris Marrison"
 __author__ = 'Chris Marrison'
 __author_email__ = 'chris@infoblox.com'
@@ -198,13 +198,15 @@ def build_queries(filename='', format='queryperf'):
             for line in qfile:
                 count += 1
                 line = line.rstrip()
-                if 'query' in line:
+                if 'query:' in line:
                     q = line.split()
-                    if q[6] == 'query:':
-                        query = { "query": q[7], "qtype": q[9]}
+                    try:
+                        qindex = q.index('query:')
+                        query = { "query": q[qindex+1], 
+                                  "qtype": q[qindex+2]}
                         _logger.debug(f'{query}')
                         queries.append(query)
-                    else:
+                    except ValueError:
                         _logger.debug(f'Error line {count}: {line}')
         else:
             _logger.debug(f'Log file format error')
