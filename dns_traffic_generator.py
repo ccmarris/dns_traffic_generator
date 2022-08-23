@@ -103,6 +103,8 @@ def parse_args(args):
     parser.add_argument('-f', '--queryformat', type=str, default='queryperf',
                         choices=['queryperf', 'bind'],
                         help="Query input file format")
+    parser.add_argument('-r', '--runonce', action='store_true',
+                        help="Run query set once, ignoring schedule")
 
     return parser.parse_args(args)
 
@@ -198,8 +200,8 @@ def build_queries(filename='', format='queryperf'):
                 line = line.rstrip()
                 if 'query' in line:
                     q = line.split()
-                    if q[5] == 'query:':
-                        query = { "query": q[6], "qtype": q[8]}
+                    if q[6] == 'query:':
+                        query = { "query": q[7], "qtype": q[9]}
                         _logger.debug(f'{query}')
                         queries.append(query)
                     else:
@@ -403,20 +405,25 @@ def main(args):
     _logger.info("Reading query file")
     qlist = build_queries(args.queryfile, format=args.queryformat)
 
-    while run:
-        if scheduled(config):
-            _logger.info("Executing queries")
-            sucess, failed = generate_queries(qlist, rtime=rtime)
-            _logger.info(f'Successful queries: {sucess}, Failed queries: {failed}')
-        else:
-            _logger.info("Not currently scheduled")
-            run = wait_for_schedule(config)
-        
-        if run:
-            # Wait for random period before continuing
-            wait = random.randint(1,21)
-            _logger.debug(f'Waiting {wait} seconds...')
-            time.sleep(wait)
+    if not args.runonce:
+        while run:
+            if scheduled(config):
+                _logger.info("Executing queries")
+                sucess, failed = generate_queries(qlist, rtime=rtime)
+                _logger.info(f'Successful queries: {sucess}, Failed queries: {failed}')
+            else:
+                _logger.info("Not currently scheduled")
+                run = wait_for_schedule(config)
+            
+            if run:
+                # Wait for random period before continuing
+                wait = random.randint(1,21)
+                _logger.debug(f'Waiting {wait} seconds...')
+                time.sleep(wait)
+    else:
+        _logger.info("Ignoring schedule: Executing queries")
+        sucess, failed = generate_queries(qlist, rtime=rtime)
+        _logger.info(f'Successful queries: {sucess}, Failed queries: {failed}')
 
     return
 
